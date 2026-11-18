@@ -36,7 +36,10 @@ def loans():
 class Handler(BaseHTTPRequestHandler):
  def response(self,status,data,content='application/json; charset=utf-8'):
   b=data if isinstance(data,bytes) else json.dumps(data,ensure_ascii=False).encode();self.send_response(status);self.send_header('Content-Type',content);self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.send_header('Content-Length',str(len(b)));self.end_headers();self.wfile.write(b)
+ def allowed_host(self):
+  return self.headers.get('Host') in ('127.0.0.1:8768','localhost:8768')
  def do_GET(self):
+  if not self.allowed_host():return self.response(403,{'error':'不允許的主機'})
   path=urlparse(self.path).path
   if path=='/': return self.response(200,(ROOT/'index.html').read_bytes(),'text/html; charset=utf-8')
   if path.startswith('/photos/'):
@@ -52,6 +55,7 @@ class Handler(BaseHTTPRequestHandler):
   return self.response(404,{'error':'找不到頁面'})
  def do_POST(self):
   try:
+   if not self.allowed_host():return self.response(403,{'error':'不允許的主機'})
    if self.headers.get('Origin') not in ('http://127.0.0.1:8768','http://localhost:8768'):raise ValueError('來源不符')
    length=int(self.headers.get('Content-Length','0'))
    if length<=0 or length>8192:raise ValueError('資料格式錯誤')
